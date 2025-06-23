@@ -1,0 +1,209 @@
+/* Import Tailwind CSS để sử dụng các utility classes */
+@import "tailwindcss";
+
+/* Định nghĩa các biến CSS cho theme sáng */
+:root {
+  --background: #ffffff; /* Màu nền chính */
+  --foreground: #171717; /* Màu chữ chính */
+  --solace-blue-light: #aecbeb; /* Màu xanh nhạt của Solace */
+  --solace-blue-lighter: #e1ecf7; /* Màu xanh rất nhạt của Solace */
+  --font-be-vietnam: var(--font-be-vietnam-pro), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* Font chính */
+}
+
+/* Định nghĩa các biến màu sắc cho theme inline */
+@theme inline {
+  --color-background-ja: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Cấu hình theme tối khi người dùng chọn dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a; /* Màu nền tối */
+    --foreground: #ededed; /* Màu chữ sáng */
+    --solace-blue-light: #aecbeb; /* Giữ nguyên màu xanh nhạt */
+    --solace-blue-lighter: #e1ecf7; /* Giữ nguyên màu xanh rất nhạt */
+  }
+}
+
+/* Cấu hình style cho body */
+body {
+  background: var(--background); /* Áp dụng màu nền */
+  color: var(--foreground); /* Áp dụng màu chữ */
+  font-family: var(--font-be-vietnam); /* Áp dụng font chính */
+}
+
+/* Style cho các icon Material Symbols */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined"; /* Font icon của Google */
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; /* Cài đặt biến thể của icon */
+  font-size: 24px; /* Kích thước icon */
+  color: #000000; /* Màu đen */
+  display: inline-block; /* Hiển thị dạng inline-block */
+  line-height: 1; /* Độ cao dòng */
+}
+
+/* Animation cho Toast notification */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.3s ease-out forwards;
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.3s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+/* Custom styles cho notification dropdown trên mobile */
+@media (max-width: 640px) {
+  /* Đảm bảo dropdown không bị che khuất bởi viewport */
+  .notification-dropdown-mobile {
+    position: fixed !important;
+    top: 80px !important;
+    right: 8px !important;
+    left: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: auto !important;
+    z-index: 9999 !important;
+  }
+  
+  /* Đảm bảo user menu luôn hiển thị đúng */
+  .user-menu-mobile {
+    position: fixed !important;
+    top: 80px !important;
+    right: 8px !important;
+    left: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: auto !important;
+    z-index: 9999 !important;
+  }
+  
+  /* Tăng kích thước touch target cho mobile */
+  .touch-target-mobile {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Cải thiện scrollbar cho mobile */
+  .scrollbar-mobile {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6;
+  }
+  
+  .scrollbar-mobile::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .scrollbar-mobile::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 2px;
+  }
+  
+  .scrollbar-mobile::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+  }
+  
+  .scrollbar-mobile::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+}
+
+/* Đảm bảo user menu luôn hiển thị đúng trên mọi thiết bị */
+@media (max-width: 480px) {
+  /* Trên màn hình rất nhỏ, đảm bảo user menu không bị che */
+  .user-menu-container {
+    position: relative !important;
+    z-index: 1000 !important;
+  }
+  
+  .user-menu-dropdown {
+    position: fixed !important;
+    top: 70px !important;
+    right: 4px !important;
+    left: 4px !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: auto !important;
+    z-index: 9999 !important;
+    margin: 0 !important;
+  }
+}
+
+/* Touch feedback cho mobile */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Active state cho mobile buttons */
+@media (hover: none) and (pointer: coarse) {
+  .touch-manipulation:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+}
