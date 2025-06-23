@@ -115,13 +115,11 @@ export default function Home() {
 
     // Initial fetch and tab change handler
     useEffect(() => {
-        if (user?.id) {
-            setPage(0);
-            setPosts([]);
-            setHasMore(true);
-            fetchPosts(0, true);
-        }
-    }, [activeTab, fetchPosts, user?.id]);
+        setPage(0);
+        setPosts([]);
+        setHasMore(true);
+        fetchPosts(0, true);
+    }, [activeTab, fetchPosts]);
 
     // Infinite scroll page change
     useEffect(() => {
