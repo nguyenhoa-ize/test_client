@@ -35,10 +35,14 @@ const RightSidebar = ({ theme = 'inspiring' }: RightSidebarProps) => {
     }
   }, [open]);
 
-  // Lấy danh sách bạn bè mutual
+  // Lấy danh sách bạn bè
   useEffect(() => {
+    if (!user) {
+      setFriends([]);
+      return;
+    }
     const fetchFriends = async () => {
-      if (!user || !accessToken) return;
+      if (!accessToken) return;
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${user.id}/friends`, {
           headers: { Authorization: `Bearer ${accessToken}` }
@@ -225,8 +229,8 @@ const RightSidebar = ({ theme = 'inspiring' }: RightSidebarProps) => {
                               {isOnline ? "Online" : "Offline"}
                             </span>
                           </div>
-      </div>
-                </div>
+                        </div>
+                      </div>
                     );
                   })
                 )}

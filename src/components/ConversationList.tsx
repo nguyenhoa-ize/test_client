@@ -14,6 +14,7 @@ interface ConversationListProps {
   onLoadMore: () => void;
   loading: boolean;
   searchQuery?: string;
+  conversationRefs?: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
 }
 
 const HighlightText: FC<{ text: string; query: string }> = ({ text, query }) => {
@@ -40,6 +41,7 @@ export const ConversationList: FC<ConversationListProps> = ({
   onLoadMore,
   loading,
   searchQuery,
+  conversationRefs,
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +103,9 @@ export const ConversationList: FC<ConversationListProps> = ({
             return (
               <div
                 key={conv.id}
+                ref={el => {
+                  if (conversationRefs) conversationRefs.current[conv.id] = el;
+                }}
                 onClick={() => onSelect(conv.id)}
                 className={clsx(
                   'flex items-center p-3 cursor-pointer transition-colors absolute top-0 left-0 w-full',

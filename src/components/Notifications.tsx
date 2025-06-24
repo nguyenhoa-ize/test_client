@@ -12,39 +12,6 @@ import { formatDate } from '../lib/dateUtils';
 import Toast from "./Toast";
 import { PostType } from '@/types/Post';
 
-interface User {
-  id: string;
-  first_name: string;
-  last_name: string;
-  avatar_url: string;
-}
-
-interface PostDetail {
-  id: string;
-  name: string;
-  date: string;
-  content: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  images?: string[];
-  avatar_url?: string;
-  shared_name?: string;
-  shared_avatar_url?: string;
-  shared_date?: string;
-  shared_post?: {
-    id: string;
-    name: string;
-    date: string;
-    content: string;
-    likes: number;
-    comments: number;
-    shares: number;
-    images?: string[];
-    avatar_url?: string;
-  };
-}
-
 const NotificationsPage = () => {
   const { user, accessToken } = useUser();
   const [mounted, setMounted] = useState(false);

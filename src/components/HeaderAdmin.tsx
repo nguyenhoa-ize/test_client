@@ -59,7 +59,12 @@ export default function HeaderAdmin({
       });
       let data = await res.json();
       data = data.notifications as Notification[];
-      setNotifications(prev => (reset ? data : [...prev, ...data]));
+      setNotifications(prev => {
+        const all = reset ? data : [...prev, ...data];
+        // Loại bỏ trùng id (ưu tiên thông báo mới hơn)
+        const unique = Array.from(new Map(all.map((n: Notification) => [n.id, n])).values());
+        return unique as Notification[];
+      });
       setNotiHasMore(data.length === NOTI_PAGE_SIZE);
       setNotiPage(page);
     } catch (err) {
@@ -315,7 +320,7 @@ export default function HeaderAdmin({
               <button onClick={() => handleDropdownTabChange('unread')} className={`px-2 py-1 rounded font-semibold text-xs sm:text-sm transition ${dropdownTab === 'unread' ? 'text-orange-600 bg-orange-50' : 'text-gray-600 hover:bg-gray-50'}`}>Chưa đọc</button>
             </div>
             {/* Danh sách thông báo */}
-            <div className="max-h-96 overflow-y-auto divide-y divide-gray-50 scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-gray-100">
+            <div ref={notiListRef} className="max-h-96 overflow-y-auto divide-y divide-gray-50 scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-gray-100">
               {notiLoading && notifications.length === 0 ? (
                 <div className="flex justify-center py-8">
                   <span className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500"></span>

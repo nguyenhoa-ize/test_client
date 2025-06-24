@@ -16,6 +16,7 @@ import { ImageUploadModal } from './ImageUploadModal';
 import { debounce } from 'lodash';
 import { SearchInput } from './SearchInput';
 import { useRouter } from 'next/navigation';
+import gsap from 'gsap';
 
 const MessagePage: FC = () => {
   // State
@@ -64,6 +65,7 @@ const MessagePage: FC = () => {
   const previousMessageLengthRef = useRef(0); // So sánh số lượng tin nhắn
   const firstLoadRef = useRef(true); // Scroll 1 lần khi mở phòng
   const isLoadingMoreRef = useRef(false);
+  const conversationRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const { uploadFiles, isUploading, uploadProgress } = useFileUpload({
     onUploadComplete: (imageUrls) => {
@@ -437,8 +439,8 @@ const MessagePage: FC = () => {
       const updateConversations = async () => {
         const exists = conversations.some(c => c.id === msg.conversation_id);
         if (exists) {
-          setConversations(prev =>
-            prev.map(conv =>
+          setConversations(prev => {
+            const updated = prev.map(conv =>
               conv.id === msg.conversation_id
                 ? {
                     ...conv,
@@ -448,8 +450,25 @@ const MessagePage: FC = () => {
                     updated_at: msg.created_at,
                   }
                 : conv
-            )
-          );
+            );
+            // Đưa hội thoại có tin nhắn mới lên đầu
+            const idx = updated.findIndex(conv => conv.id === msg.conversation_id);
+            if (idx > 0) {
+              const [moved] = updated.splice(idx, 1);
+              updated.unshift(moved);
+              // Hiệu ứng GSAP: fade + slide
+              const node = conversationRefs.current[msg.conversation_id];
+              if (node) {
+                gsap.fromTo(node, { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' });
+                // Tự động cuộn lên đầu
+                const parentNode = node.parentElement?.parentElement;
+                if (parentNode && parentNode instanceof HTMLElement) {
+                  parentNode.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }
+            }
+            return updated;
+          });
         } else {
           const newConversation = await fetchConversation(msg.conversation_id);
           if (newConversation) {
@@ -741,6 +760,7 @@ const MessagePage: FC = () => {
           loading={isLoading}
           searchQuery={searchQuery}
           onLoadMore={handleLoadMoreConversations}
+          conversationRefs={conversationRefs}
         />
       </div>
 
