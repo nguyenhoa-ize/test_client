@@ -118,7 +118,7 @@ const MessagePage: FC = () => {
         setTotalConversations(total);
         localStorage.setItem('conversations', JSON.stringify(append ? [...(conversations || []), ...data] : data));
       } catch (error) {
-        console.error('Error fetching conversations:', error);
+        // console.error('Error fetching conversations:', error);
         setError('Failed to load conversations');
       } finally {
         setIsLoading(false);
@@ -156,7 +156,7 @@ const MessagePage: FC = () => {
           [conversationId]: page
         }));
       } catch (error) {
-        console.error('Error fetching messages:', error);
+        // console.error('Error fetching messages:', error);
       }
     },
     [accessToken]
@@ -193,7 +193,7 @@ const MessagePage: FC = () => {
         },
       };
     } catch (error) {
-      console.error('Lỗi khi lấy chi tiết cuộc hội thoại:', error);
+      // console.error('Lỗi khi lấy chi tiết cuộc hội thoại:', error);
       return null;
     }
   };
@@ -214,7 +214,7 @@ const MessagePage: FC = () => {
 
   useEffect(() => {
     if (user?.id && socket.connected) {
-      console.log('[Messages.tsx] Re-mount → emit register');
+      // console.log('[Messages.tsx] Re-mount → emit register');
       socket.emit('register', user.id);
     }
   }, [user?.id]);
@@ -224,7 +224,7 @@ const MessagePage: FC = () => {
   useEffect(() => {
     const onlineHandler = (users: string[]) => {
       setOnlineUsers(new Set(users));
-      console.log("Update online: ", users);
+      // console.log("Update online: ", users);
     }
     socket.on('onlineUsers', onlineHandler);
     
@@ -310,7 +310,7 @@ const MessagePage: FC = () => {
         }
       }, 0);
     } catch (err) {
-      console.error('Error loading more messages:', err);
+      // console.error('Error loading more messages:', err);
     } finally {
       setTimeout(() => {
         isLoadingMoreRef.current = false;
@@ -367,7 +367,7 @@ const MessagePage: FC = () => {
         setFilteredConversations(data);
         setTotalConversations(total);
       } catch (error) {
-        console.error('Error searching conversations:', error);
+        // console.error('Error searching conversations:', error);
         setError('Failed to search conversations');
         setTimeout(() => setError(null), 3000);
       } finally {
@@ -668,7 +668,7 @@ const MessagePage: FC = () => {
         ];
       });
     } catch (error) {
-      console.error('Lỗi tạo cuộc hội thoại:', error);
+      // console.error('Lỗi tạo cuộc hội thoại:', error);
       // Hiển thị thông báo lỗi cho người dùng
       showToast("Không tạo được hội thoại", "error");
     }

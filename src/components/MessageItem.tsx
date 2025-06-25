@@ -77,7 +77,7 @@ const MessageItemComponent: FC<MessageItemProps> = ({
       )}
 
       {/* Vùng chứa toàn bộ nội dung tin nhắn */}
-      <div className="relative flex max-w-[90vw] sm:max-w-[80%]">
+      <div className="relative flex max-w-[90vw] sm:max-w-xl lg:max-w-2xl">
         {/* Nút reply - luôn hiển thị nhưng ẩn cho đến khi hover */}
         <button
           onClick={() => onReply(message)}

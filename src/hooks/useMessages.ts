@@ -36,7 +36,7 @@ export const useMessages = (conversationId: string | null): UseMessagesReturn =>
       const data: Message[] = await response.json();
       setMessages(prev => pageNum === 1 ? data : [...data, ...prev]);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      // No need to log error here
     }
   }, [accessToken, conversationId]);
 
@@ -153,7 +153,6 @@ export const useMessages = (conversationId: string | null): UseMessagesReturn =>
       }
     } catch (error) {
       setMessages(prev => prev.filter(msg => msg.id !== tempId));
-      console.error('Error sending message:', error);
     }
   }, [conversationId, accessToken, user]);
 

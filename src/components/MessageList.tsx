@@ -51,11 +51,11 @@ export const MessageList: FC<MessageListProps> = ({
           <div className="relative my-4 text-center">
             <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-200"></div>
             <span className="relative inline-block px-3 py-1 text-xs text-gray-500 bg-white rounded-full">
-              {new Date(group.date).toLocaleDateString(undefined, {
+              {new Date(group.date).toLocaleDateString('vi-VN', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                day: '2-digit'
               })}
             </span>
           </div>
