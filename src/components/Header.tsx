@@ -947,7 +947,7 @@ const Header = memo<HeaderProps>(({
 
   return (
     <>
-      <header className="flex items-center justify-between w-full h-14 sm:h-16 md:h-20 px-3 sm:px-4 md:px-6 lg:px-8 xl:px-16" style={{ backgroundColor: headerBg }}>
+      <header className="sticky top-0 z-50 flex items-center justify-between w-full h-14 sm:h-16 md:h-20 px-3 sm:px-4 md:px-6 lg:px-8 xl:px-16" style={{ backgroundColor: headerBg }}>
         {/* Mobile Search View */}
         {showMobileSearch && (
             <div className="absolute inset-0 flex items-center bg-white px-2 z-20">
@@ -983,8 +983,8 @@ const Header = memo<HeaderProps>(({
               <Image src="/logo.png" alt="Solace Logo" width={192} height={80} className="object-contain w-full h-full" priority />
             </Link>
             
-            {/* Search Bar */}
-            <div className="hidden md:block absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-[700px] px-4 z-10">
+            {/* Search Bar - Changed from absolute to flex positioning */}
+            <div className="hidden md:flex flex-1 justify-center max-w-[700px] mx-4 relative">
               <div className="flex w-full rounded-full border border-black bg-white overflow-hidden" ref={inputWrapperRef}>
                 <FilteredInput
                   ref={inputRef}
@@ -1166,7 +1166,13 @@ const Header = memo<HeaderProps>(({
                   {showMessageDropdown && (
                     <div
                       ref={messageDropdownRef}
-                      className="absolute top-full mt-2 right-[-1rem] sm:right-0 w-[calc(100vw-2rem)] max-w-sm sm:w-80 md:w-96 bg-white rounded-xl shadow-lg py-2 z-50 border border-gray-100 animate-fade-in"
+                      className="absolute top-full mt-2 right-0 w-72 sm:w-80 md:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg py-2 z-50 border border-gray-100 animate-fade-in"
+                      style={{
+                        minWidth: '260px',
+                        maxWidth: 'calc(100vw - 1rem)',
+                        right: 0,
+                        left: 'auto'
+                      }}
                     >
                       {/* Header dropdown */}
                       <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-gray-100">
@@ -1290,7 +1296,13 @@ const Header = memo<HeaderProps>(({
                   {showNotificationDropdown && (
                     <div
                       ref={notificationDropdownRef}
-                      className="absolute top-full mt-2 right-[-1rem] sm:right-0 w-[calc(100vw-2rem)] max-w-sm sm:w-80 md:w-96 bg-white rounded-xl shadow-lg py-2 z-50 border border-gray-100 animate-fade-in"
+                      className="absolute top-full mt-2 right-0 w-72 sm:w-80 md:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg py-2 z-50 border border-gray-100 animate-fade-in"
+                      style={{
+                        minWidth: '260px',
+                        maxWidth: 'calc(100vw - 1rem)',
+                        right: 0,
+                        left: 'auto'
+                      }}
                     >
                       {/* Header dropdown */}
                       <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-gray-100">

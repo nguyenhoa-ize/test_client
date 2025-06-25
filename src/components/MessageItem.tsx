@@ -24,6 +24,7 @@ const MessageItemComponent: FC<MessageItemProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [toggler, setToggler] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [expanded, setExpanded] = useState(false);
 
   const images = message.image_urls || [];
   const hasImages = images.length > 0;
@@ -40,6 +41,11 @@ const MessageItemComponent: FC<MessageItemProps> = ({
       scrollToMessage(message.reply_to_message_id);
     }
   };
+
+  const isLongMessage = message.content && (message.content.length > 300 || message.content.split('\n').length > 6);
+  const previewContent = message.content
+    ? message.content.split('\n').slice(0, 6).join('\n').slice(0, 300)
+    : '';
 
   useEffect(() => {
     if (containerRef.current) {
@@ -71,7 +77,7 @@ const MessageItemComponent: FC<MessageItemProps> = ({
       )}
 
       {/* Vùng chứa toàn bộ nội dung tin nhắn */}
-      <div className="relative flex max-w-[80%]">
+      <div className="relative flex max-w-[90vw] sm:max-w-[80%]">
         {/* Nút reply - luôn hiển thị nhưng ẩn cho đến khi hover */}
         <button
           onClick={() => onReply(message)}
@@ -163,13 +169,48 @@ const MessageItemComponent: FC<MessageItemProps> = ({
           {message.content && (
             <div
               className={clsx(
-                'px-4 py-2 rounded-2xl whitespace-pre-wrap break-words shadow-sm text-gray-900 mt-1',
+                'px-2 py-1 sm:px-4 sm:py-2 rounded-2xl whitespace-pre-wrap break-all shadow-sm text-gray-900 mt-1',
                 isOwn
                   ? 'bg-[#CCE5FF] rounded-br-sm self-end hover:bg-[#B3D8FF]'
                   : 'bg-[#F1F5F9] rounded-bl-sm self-start hover:bg-[#E2E8F0]'
               )}
             >
-              <div>{message.content}</div>
+              <div className={clsx('relative transition-all duration-300', expanded ? 'max-h-full' : 'max-h-48 overflow-hidden')}
+              >
+                {expanded || !isLongMessage ? (
+                  message.content
+                ) : (
+                  <>
+                    {previewContent}
+                    {previewContent.length < message.content.length && '...'}
+                  </>
+                )}
+                {/* Gradient mờ ở cuối khi chưa mở rộng */}
+                {isLongMessage && !expanded && (
+                  <div className="pointer-events-none absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-white/90 to-transparent" />
+                )}
+              </div>
+              {isLongMessage && (
+                <div className="flex justify-center mt-2">
+                  {!expanded ? (
+                    <button
+                      className="flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full px-3 py-1 shadow-sm transition-all duration-200 focus:outline-none"
+                      onClick={() => setExpanded(true)}
+                    >
+                      <span>Xem thêm</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                  ) : (
+                    <button
+                      className="flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full px-3 py-1 shadow-sm transition-all duration-200 focus:outline-none"
+                      onClick={() => setExpanded(false)}
+                    >
+                      <span>Thu gọn</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

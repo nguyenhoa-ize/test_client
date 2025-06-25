@@ -5,7 +5,7 @@ import { socket } from '@/socket';
 
 interface SendMessagePayload {
   content: string;
-  imageUrl?: string;
+  imageUrls?: string[];
   replyToMessageId?: string;
 }
 
@@ -109,19 +109,19 @@ export const useMessages = (conversationId: string | null): UseMessagesReturn =>
     }
   }, [conversationId]);
 
-  const sendMessage = useCallback(async ({ content, imageUrl, replyToMessageId }: SendMessagePayload) => {
-    if (!conversationId || !accessToken || !user || (!content.trim() && !imageUrl)) return;
+  const sendMessage = useCallback(async ({ content, imageUrls, replyToMessageId }: SendMessagePayload) => {
+    if (!conversationId || !accessToken || !user || (!content.trim() && !imageUrls)) return;
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: Message = {
       id: tempId,
       sender_id: user.id,
       content,
-      image_url: imageUrl,
+      image_urls: imageUrls,
       created_at: new Date().toISOString(),
       status: 'pending' as any,
       conversation_id: conversationId,
-      type: imageUrl ? 'image' : 'text',
+      type: imageUrls ? 'image' : 'text',
       read_by_count: 1,
       sender_name: `${user.first_name} ${user.last_name}`,
       sender_avatar: user.avatar_url,
@@ -141,8 +141,8 @@ export const useMessages = (conversationId: string | null): UseMessagesReturn =>
           },
           body: JSON.stringify({ 
             content, 
-            imageUrl,
-            type: imageUrl ? 'image' : 'text',
+            imageUrls,
+            type: imageUrls ? 'image' : 'text',
             replyToMessageId
           })
         }

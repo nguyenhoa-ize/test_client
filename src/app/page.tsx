@@ -2,7 +2,6 @@
 
 // Import các component và hook cần thiết cho trang chủ
 import { useState, useEffect, useCallback, useContext, useMemo } from "react";
-import Header from "@/components/Header";
 import Tabs from "@/components/Tabs";
 import InputSection from "@/components/InputSection";
 import Post from "@/components/Post";
@@ -204,7 +203,7 @@ export default function Home() {
     };
 
     return (
-        <MainLayout>
+        <MainLayout theme={theme}>
             <div className={`min-h-screen w-full ${bgClass}`}>
 
                 <div className="pt-[3rem]">

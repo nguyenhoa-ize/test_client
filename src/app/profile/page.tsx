@@ -382,6 +382,9 @@ export default function ProfilePage() {
                                 <h1 className="text-2xl font-semibold text-slate-900">
                                     {`${user.first_name} ${user.last_name}`}
                                 </h1>
+                                <p className="text-slate-500 mt-1">
+                                    @{user.email.split("@")[0]}
+                                </p>
                                 <p className="text-slate-600 mt-2 text-base min-h-[24px] italic">
                                     {user?.bio?.trim() ? (
                                         user.bio
@@ -391,9 +394,7 @@ export default function ProfilePage() {
                                         </span>
                                     )}
                                 </p>
-                                <p className="text-slate-500 mt-1">
-                                    @{user.email.split("@")[0]}
-                                </p>
+
                             </div>
 
                             <div className="mt-6 grid grid-cols-4 gap-4">

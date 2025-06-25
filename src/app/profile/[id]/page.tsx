@@ -237,10 +237,28 @@ export default function UserProfilePage({
                 }
             );
             const mediaUrls = Array.isArray(posts)
-                ? posts.reduce(
-                      (acc, post) => acc.concat(post.images || []),
-                      [] as string[]
-                  )
+                ? posts.reduce((acc, post) => {
+                      let images = post.images;
+                      if (typeof images === "string") {
+                          try {
+                              images = JSON.parse(images);
+                          } catch {
+                              images = [];
+                          }
+                      }
+                      if (Array.isArray(images)) {
+                          return acc.concat(
+                              images.filter(
+                                  (img) =>
+                                      typeof img === "string" &&
+                                      (img.startsWith("http://") ||
+                                          img.startsWith("https://") ||
+                                          img.startsWith("/"))
+                              )
+                          );
+                      }
+                      return acc;
+                  }, [] as string[])
                 : [];
             setUserMedia(mediaUrls);
         } catch {
@@ -615,12 +633,12 @@ export default function UserProfilePage({
                             <div className="flex justify-between items-end -mt-16">
                                 <div className="relative">
                                     {profileUser?.avatar_url ? (
-                                        <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center bg-white">
+                                        <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center bg-white group transition-all duration-200 hover:shadow-xl">
                                             <Image
                                                 src={profileUser.avatar_url}
                                                 alt="Profile"
                                                 fill
-                                                className="object-cover"
+                                                className="object-cover rounded-full transition-transform duration-200 group-hover:scale-105"
                                                 sizes="128px"
                                             />
                                         </div>
@@ -814,20 +832,23 @@ export default function UserProfilePage({
                                         ? `${profileUser.first_name} ${profileUser.last_name}`
                                         : "Loading..."}
                                 </h1>
-                                <p className="text-slate-600 mt-2 text-base min-h-[24px] italic">
-                                    {profileUser?.bio?.trim() ? (
-                                        profileUser.bio
-                                    ) : (
-                                        <span className="text-slate-400">
-                                            Chưa có tiểu sử
-                                        </span>
-                                    )}
-                                </p>
                                 <p className="text-slate-500 mt-1">
                                     {profileUser?.email
                                         ? `@${profileUser.email.split("@")[0]}`
                                         : "@user"}
                                 </p>
+                                <div className="flex items-center gap-2 mt-2 min-h-[24px]">
+                                    <p className="text-slate-600 text-base italic break-words max-w-full">
+                                        {profileUser?.bio?.trim() ? (
+                                            profileUser.bio
+                                        ) : (
+                                            <span className="text-slate-400">
+                                                Chưa có tiểu sử
+                                            </span>
+                                        )}
+                                    </p>
+                                </div>
+
                             </div>
                             {/* Stats Grid */}
                             <div className="mt-6 grid grid-cols-4 gap-4">
@@ -976,21 +997,43 @@ export default function UserProfilePage({
                                             </p>
                                         </div>
                                     ) : (
-                                        userMedia.map((url, index) => (
-                                            <div
-                                                key={index}
-                                                className="aspect-square bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer"
-                                                onClick={() => openModal(url)}
-                                            >
-                                                <Image
-                                                    src={url}
-                                                    alt={`Media ${index + 1}`}
-                                                    fill
-                                                    className="object-cover transition-transform group-hover:scale-110"
-                                                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                                                />
-                                            </div>
-                                        ))
+                                        userMedia
+                                            .filter(
+                                                (url) =>
+                                                    typeof url === "string" &&
+                                                    (url.startsWith(
+                                                        "http://"
+                                                    ) ||
+                                                        url.startsWith(
+                                                            "https://"
+                                                        ) ||
+                                                        url.startsWith("/"))
+                                            )
+                                            .map((url, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="aspect-square bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer"
+                                                    onClick={() =>
+                                                        openModal(url)
+                                                    }
+                                                >
+                                                    <Image
+                                                        src={url}
+                                                        alt={`Media ${
+                                                            index + 1
+                                                        }`}
+                                                        fill
+                                                        className="object-cover transition-transform group-hover:scale-110"
+                                                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                                        onError={(e) => {
+                                                            (
+                                                                e.target as HTMLImageElement
+                                                            ).src =
+                                                                "/broken-image.svg";
+                                                        }}
+                                                    />
+                                                </div>
+                                            ))
                                     )}
                                 </div>
                             </div>
@@ -999,18 +1042,27 @@ export default function UserProfilePage({
                             <div className="bg-white rounded-xl p-6 shadow-sm">
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-lg font-medium text-slate-900 mb-4">
+                                        <h3 className="text-lg font-medium text-slate-900 mb-4 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-indigo-400">
+                                                person
+                                            </span>
                                             Giới thiệu
                                         </h3>
                                         <div className="space-y-4">
-                                            {profileUser?.bio && (
-                                                <div className="flex items-start gap-3 text-slate-600">
-                                                    <span className="material-symbols-outlined text-slate-400 mt-0.5">
-                                                        notes
-                                                    </span>
-                                                    <p>{profileUser.bio}</p>
-                                                </div>
-                                            )}
+                                            <div className="flex items-start gap-3 text-slate-600">
+                                                <span className="material-symbols-outlined text-slate-400 mt-0.5">
+                                                    notes
+                                                </span>
+                                                <p className="break-words max-w-full">
+                                                    {profileUser?.bio?.trim() ? (
+                                                        profileUser.bio
+                                                    ) : (
+                                                        <span className="text-slate-400">
+                                                            Chưa có tiểu sử
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            </div>
                                             <div className="flex items-center gap-3 text-slate-600">
                                                 <span className="material-symbols-outlined text-slate-400">
                                                     mail
