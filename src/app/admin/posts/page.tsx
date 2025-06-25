@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, Fragment } from 'react';
+import React, { useEffect, useRef, useState, Fragment, useCallback } from 'react';
 import { FiSearch, FiChevronDown, FiTrash2, FiEye, FiCheck } from 'react-icons/fi';
 import AdminLayout from '@/components/AdminLayout';
 import { toast, ToastContainer } from 'react-toastify';
@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { socket } from '@/socket';
 import AdminGuard from '@/components/AdminGuard';
 import { FixedSizeList as List } from 'react-window';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 type Post = {
   id: string;
@@ -95,8 +96,10 @@ export default function PostManagementPage() {
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
   const listRef = useRef<any>(null);
+  const mobileListRef = useRef<HTMLDivElement>(null);
   const PAGE_SIZE_INITIAL = 10;
   const PAGE_SIZE_MORE = 3;
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -161,7 +164,7 @@ export default function PostManagementPage() {
       if (search.trim()) params.set('search', search);
       params.set('offset', reset ? '0' : offset.toString());
       params.set('limit', pageSize.toString());
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts?${params.toString()}`);
+      const res = await fetch(`http://localhost:5000/api/admin/posts?${params.toString()}`);
       const result = await res.json();
       let sortedPosts = [...(result.items || [])];
       if (sortTime === 'newest') {
@@ -196,26 +199,33 @@ export default function PostManagementPage() {
   }, [type, status, sortTime]);
 
   useEffect(() => {
-    if (!search.trim()) {
+    // Debounce tìm kiếm realtime
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
       setOffset(0);
       setHasMore(true);
       fetchPosts(true);
-    }
+    }, 300);
+    return () => {
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+      return undefined;
+    };
     // eslint-disable-next-line
   }, [search]);
 
   // Socket events (same as before)
   useEffect(() => {
     const handleNewPost = (data: { post: Post }) => {
-      setPosts((prev) =>
-        [data.post, ...prev].sort((a, b) =>
+      setPosts((prev) => {
+        if (prev.some(p => p.id === data.post.id)) return prev;
+        return [data.post, ...prev].sort((a, b) =>
           sortTime === 'newest'
             ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             : sortTime === 'oldest'
             ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
             : 0
-        )
-      );
+        );
+      });
     };
     const handlePostApproved = (data: { post: Post }) => {
       setPosts((prev) =>
@@ -256,7 +266,7 @@ export default function PostManagementPage() {
   const handleApprove = async (id: string) => {
     const post = posts.find((p) => p.id === id);
     if (!post) return;
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts/${id}/approve`, { method: 'PUT' });
+    await fetch(`http://localhost:5000/api/admin/posts/${id}/approve`, { method: 'PUT' });
     toast.success(`Đã duyệt bài: "${post.content.slice(0, 50)}..."`);
     fetchPosts(true);
   };
@@ -265,7 +275,7 @@ export default function PostManagementPage() {
     setSelectedPost(null);
     setSharedPost(null);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts/${postId}`);
+      const res = await fetch(`/api/admin/posts/${postId}`);
       if (!res.ok) return;
       const data = await res.json();
       setSelectedPost(data.post);
@@ -284,7 +294,7 @@ export default function PostManagementPage() {
     if (deletePostId) {
       const post = posts.find((p) => p.id === deletePostId);
       if (!post) return;
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts/${deletePostId}`, { method: 'DELETE' });
+      await fetch(`http://localhost:5000/api/admin/posts/${deletePostId}`, { method: 'DELETE' });
       toast.success(`Đã xóa bài: "${post.content.slice(0, 50)}..."`);
       setDeletePostId(null);
       fetchPosts(true);
@@ -300,6 +310,19 @@ export default function PostManagementPage() {
   const handleLoadMore = () => {
     if (!loading && hasMore) fetchPosts(false);
   };
+
+  useEffect(() => {
+    const ref = mobileListRef.current;
+    if (!ref) return;
+    const handleScroll = () => {
+      if (loading || !hasMore) return;
+      if (ref.scrollHeight - ref.scrollTop - ref.clientHeight < 100) {
+        handleLoadMore();
+      }
+    };
+    ref.addEventListener('scroll', handleScroll);
+    return () => ref.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore]);
 
   const sortedPosts = [...posts];
   if (sortTime === 'newest') {
@@ -337,12 +360,7 @@ export default function PostManagementPage() {
               </div>
             </div>
             {/* Card view for mobile, giống report */}
-            <div className="block sm:hidden">
-              <div className="flex flex-col gap-2 mb-2">
-                <CustomDropdown value={type} onChange={v => setType(v as any)} options={typeOptions} widthClass="w-full" />
-                <CustomDropdown value={status} onChange={v => setStatus(v as any)} options={statusOptions} widthClass="w-full" />
-                <CustomDropdown value={sortTime || ''} onChange={v => setSortTime(v as any)} options={timeOptions} placeholder="Thời gian" widthClass="w-full" />
-              </div>
+            <div className="block sm:hidden" ref={mobileListRef} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
               {loading && sortedPosts.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 bg-white rounded-xl border">
                   <span className="inline-flex items-center justify-center">
@@ -418,21 +436,9 @@ export default function PostManagementPage() {
                       </div>
                     </div>
                   ))}
-                  {loading && sortedPosts.length > 0 && (
-                    <div className="text-center py-2 text-gray-500">Đang tải...</div>
-                  )}
-                  {!hasMore && sortedPosts.length > 0 && (
-                    <div className="text-center py-2 text-gray-400 text-sm">Đã hiển thị hết danh sách</div>
-                  )}
-                  {hasMore && !loading && (
-                    <div className="flex justify-center py-2">
-                      <button
-                        className="px-4 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-sm font-semibold"
-                        onClick={handleLoadMore}
-                      >
-                        Tải thêm
-                      </button>
-                    </div>
+                  {/* Infinite scroll: spinner sẽ hiện khi loading */}
+                  {loading && hasMore && (
+                    <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                   )}
                 </>
               )}
@@ -506,7 +512,7 @@ export default function PostManagementPage() {
                       }}
                     </List>
                     {loading && sortedPosts.length > 0 && (
-                      <div className="text-center py-2 text-gray-500">Đang tải...</div>
+                      <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                     )}
                     {!hasMore && sortedPosts.length > 0 && (
                       <div className="text-center py-2 text-gray-400 text-sm">Đã hiển thị hết danh sách</div>

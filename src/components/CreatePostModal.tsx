@@ -7,6 +7,7 @@ import { useUser } from '../contexts/UserContext';
 import gsap from 'gsap';
 import { fetchForbiddenWords, filterForbiddenWords } from '../lib/forbiddenWords';
 import { getForbiddenWordsInText } from '../utils/filterForbiddenWords';
+import FilteredTextarea from './FilteredTextarea';
 import Toast from './Toast';
 import type { PostType } from '../types/Post';
 
@@ -185,7 +186,9 @@ export default function CreatePostModal({ onClose, onPostCreated, theme, default
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+    // Lọc từ cấm và thay thế bằng ***
+    const filtered = filterForbiddenWords(e.target.value, forbiddenWords);
+    setContent(filtered);
   };
 
   useLayoutEffect(() => {
@@ -259,7 +262,7 @@ export default function CreatePostModal({ onClose, onPostCreated, theme, default
             </div>
           </div>
           {/* Content textarea */}
-          <textarea
+          <FilteredTextarea
             ref={textareaRef}
             className="w-full min-h-[70px] max-h-40 px-4 py-2 rounded-xl border border-black/10 bg-[#f8f9fd] text-base font-normal placeholder:text-gray-400 focus:outline-none text-black shadow-sm transition-all duration-200 resize-none"
             placeholder="Chia sẻ cảm xúc, câu chuyện hoặc khoảnh khắc của bạn..."

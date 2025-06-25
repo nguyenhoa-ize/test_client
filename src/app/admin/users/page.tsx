@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import type { ReactElement } from 'react';
 import { FiSearch, FiEdit2, FiLock, FiUnlock } from 'react-icons/fi';
 import AdminLayout from '@/components/AdminLayout';
@@ -11,6 +11,7 @@ import { FixedSizeList as List } from 'react-window';
 import { Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { HiSelector } from 'react-icons/hi';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 type User = {
   id: string;
@@ -102,6 +103,8 @@ export default function UserManagementPage(): ReactElement {
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const mobileListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -142,7 +145,7 @@ export default function UserManagementPage(): ReactElement {
         limit: pageSize.toString(),
         search: searchText.trim() || '',
       });
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users?${params.toString()}`);
+      const res = await fetch(`http://localhost:5000/api/users?${params.toString()}`);
       const data = await res.json();
       console.log('API data:', data);
       let filtered = data.users || [];
@@ -176,11 +179,17 @@ export default function UserManagementPage(): ReactElement {
   }, [statusFilter, roleFilter]);
 
   useEffect(() => {
-    if (!searchText.trim()) {
+    // Debounce tìm kiếm realtime
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
       setOffset(0);
       setHasMore(true);
       fetchUsers(true);
-    }
+    }, 300);
+    return () => {
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+      return undefined;
+    };
     // eslint-disable-next-line
   }, [searchText]);
 
@@ -196,7 +205,7 @@ export default function UserManagementPage(): ReactElement {
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/status`, {
+      await fetch(`http://localhost:5000/api/users/${userId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !currentStatus }),
@@ -225,7 +234,7 @@ export default function UserManagementPage(): ReactElement {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
     try {
       // 2. Gửi request lên backend
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/role`, {
+      const res = await fetch(`http://localhost:5000/api/users/${userId}/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
@@ -238,6 +247,19 @@ export default function UserManagementPage(): ReactElement {
       toast.error('Đã xảy ra lỗi khi cập nhật phân quyền.');
     }
   };
+
+  useEffect(() => {
+    const ref = mobileListRef.current;
+    if (!ref) return;
+    const handleScroll = () => {
+      if (loading || !hasMore) return;
+      if (ref.scrollHeight - ref.scrollTop - ref.clientHeight < 100) {
+        handleLoadMore();
+      }
+    };
+    ref.addEventListener('scroll', handleScroll);
+    return () => ref.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore]);
 
   return (
     <AdminGuard>
@@ -269,7 +291,7 @@ export default function UserManagementPage(): ReactElement {
               </div>
             </div>
             {/* Dropdown filter cho mobile */}
-            <div className="block sm:hidden">
+            <div className="block sm:hidden" ref={mobileListRef} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
               <div className="flex flex-col gap-2 mb-2">
                 <CustomDropdown value={statusFilter} onChange={v => setStatusFilter(v as 'all' | 'active' | 'locked')} options={statusOptions} widthClass="w-full" />
                 <CustomDropdown value={roleFilter} onChange={v => setRoleFilter(v as 'all' | 'user' | 'admin')} options={roleFilterOptions} widthClass="w-full" />
@@ -327,21 +349,9 @@ export default function UserManagementPage(): ReactElement {
                       </div>
                     </div>
                   ))}
-                  {loading && users.length > 0 && (
-                    <div className="text-center py-2 text-gray-500">Đang tải...</div>
-                  )}
-                  {!hasMore && users.length > 0 && (
-                    <div className="text-center py-2 text-gray-400 text-sm">Đã hiển thị hết danh sách</div>
-                  )}
-                  {hasMore && !loading && (
-                    <div className="flex justify-center py-2">
-                      <button
-                        className="px-4 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-sm font-semibold"
-                        onClick={handleLoadMore}
-                      >
-                        Xem thêm
-                      </button>
-                    </div>
+                  {/* Infinite scroll: spinner sẽ hiện khi loading */}
+                  {loading && hasMore && (
+                    <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                   )}
                 </>
               )}
@@ -439,7 +449,7 @@ export default function UserManagementPage(): ReactElement {
                   </List>
                   {/* Khi đang load thêm ở cuối danh sách */}
                   {loading && users.length > 0 && (
-                    <div className="text-center py-2 text-gray-500">Đang tải...</div>
+                    <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                   )}
                   {!hasMore && users.length > 0 && (
                     <div className="text-center py-2 text-gray-400 text-sm">Đã hiển thị hết danh sách</div>
@@ -508,7 +518,7 @@ export default function UserManagementPage(): ReactElement {
                           toast.error('Email không đúng định dạng!');
                           return;
                         }
-                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${editingUser.id}`, {
+                        await fetch(`http://localhost:5000/api/users/${editingUser.id}`, {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({

@@ -11,6 +11,8 @@ import AdminGuard from '@/components/AdminGuard';
 import { FixedSizeList as List } from 'react-window';
 import { Listbox, Transition } from '@headlessui/react';
 import { HiSelector } from 'react-icons/hi';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { socket } from '@/socket';
 
 type Report = {
   report_id: string;
@@ -118,6 +120,8 @@ export default function ReportsPage(): ReactElement {
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const mobileListRef = useRef<HTMLDivElement>(null);
 
   const truncateIfNeeded = (text: string, width: number): string => {
     if (text == null || typeof text !== 'string') {
@@ -183,7 +187,14 @@ export default function ReportsPage(): ReactElement {
       } else {
         setReports(prev => {
           const all = [...prev, ...fetched];
-          const unique = Array.from(new Map(all.map(r => [r.report_id, r])).values());
+          const seen = new Set();
+          const unique = [];
+          for (const r of all) {
+            if (!seen.has(r.report_id)) {
+              unique.push(r);
+              seen.add(r.report_id);
+            }
+          }
           return unique;
         });
         setOffset(prev => prev + pageSize);
@@ -204,11 +215,17 @@ export default function ReportsPage(): ReactElement {
   }, [status, sortTime]);
 
   useEffect(() => {
-    if (!search.trim()) {
+    // Debounce tìm kiếm realtime
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
       setOffset(0);
       setHasMore(true);
       fetchReports(true);
-    }
+    }, 300);
+    return () => {
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+      return undefined;
+    };
     // eslint-disable-next-line
   }, [search]);
 
@@ -232,6 +249,45 @@ export default function ReportsPage(): ReactElement {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const ref = mobileListRef.current;
+    if (!ref) return;
+    const handleScroll = () => {
+      if (loading || !hasMore) return;
+      if (ref.scrollHeight - ref.scrollTop - ref.clientHeight < 100) {
+        handleLoadMore();
+      }
+    };
+    ref.addEventListener('scroll', handleScroll);
+    return () => ref.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore]);
+
+  useEffect(() => {
+    const handleNewReport = (data: { report: Report }) => {
+      setReports((prev) => {
+        if (prev.some(r => r.report_id === data.report.report_id)) return prev;
+        return [data.report, ...prev.filter(r => r.report_id !== data.report.report_id)];
+      });
+    };
+    const handleReportDeleted = (data: { reportId: string }) => {
+      setReports((prev) => prev.filter(r => r.report_id !== data.reportId));
+    };
+    socket.on('newReport', handleNewReport);
+    socket.on('reportDeleted', handleReportDeleted);
+    return () => {
+      socket.off('newReport', handleNewReport);
+      socket.off('reportDeleted', handleReportDeleted);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Join admin_room để nhận realtime update
+    socket.emit('join', 'admin_room');
+    return () => {
+      socket.emit('leave', 'admin_room');
+    };
   }, []);
 
   const handleProcess = async (id: string) => {
@@ -353,7 +409,7 @@ export default function ReportsPage(): ReactElement {
             </div>
 
             {/* Card view for mobile, giống user/post */}
-            <div className="block sm:hidden">
+            <div className="block sm:hidden" ref={mobileListRef} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
               <div className="flex flex-col gap-2 mb-2">
                 <CustomDropdown value={status} onChange={v => setStatus(v as any)} options={statusOptions} widthClass="w-full" />
                 <CustomDropdown value={sortTime || ''} onChange={v => setSortTime(v as any)} options={timeOptions} placeholder="Thời gian" widthClass="w-full" />
@@ -396,21 +452,9 @@ export default function ReportsPage(): ReactElement {
                       </div>
                     </div>
                   ))}
-                  {loading && sortedReports.length > 0 && (
-                    <div className="text-center py-2 text-gray-500">Đang tải...</div>
-                  )}
-                  {!hasMore && sortedReports.length > 0 && (
-                    <div className="text-center py-2 text-gray-400 text-sm">Đã hiển thị hết danh sách</div>
-                  )}
-                  {hasMore && !loading && (
-                    <div className="flex justify-center py-2">
-                      <button
-                        className="px-4 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-sm font-semibold"
-                        onClick={handleLoadMore}
-                      >
-                        Xem thêm
-                      </button>
-                    </div>
+                  {/* Infinite scroll: spinner sẽ hiện khi loading */}
+                  {loading && hasMore && (
+                    <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                   )}
                 </>
               )}
@@ -474,7 +518,7 @@ export default function ReportsPage(): ReactElement {
                       }}
                     </List>
                     {loading && sortedReports.length > 0 && (
-                      <div className="text-center py-2 text-gray-500">Đang tải...</div>
+                      <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                     )}
                     {!hasMore && sortedReports.length > 0 && (
                       <div className="text-center py-2 text-gray-400 text-sm">Đã hiển thị hết danh sách</div>
@@ -629,7 +673,7 @@ export default function ReportsPage(): ReactElement {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                               {imgs.map((img, idx) => (
                                 <Image
-                                  key={idx}
+                                  key={img + '-' + idx}
                                   src={img}
                                   alt={`Ảnh ${idx + 1}`}
                                   width={128}
@@ -675,7 +719,7 @@ export default function ReportsPage(): ReactElement {
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   {imgs.map((img, idx) => (
                                     <Image
-                                      key={idx}
+                                      key={img + '-' + idx}
                                       src={img}
                                       alt={`Ảnh ${idx + 1}`}
                                       width={96}

@@ -96,11 +96,18 @@ export default function Home() {
                     },
                 });
 
-                setPosts((prev) =>
-                    pageIndex === 0 || isRefresh
-                        ? fetchedPosts
-                        : [...prev, ...fetchedPosts]
-                );
+                setPosts((prev) => {
+                    const all = pageIndex === 0 || isRefresh ? fetchedPosts : [...prev, ...fetchedPosts];
+                    const seen = new Set();
+                    const unique = [];
+                    for (const p of all) {
+                        if (!seen.has(p.id)) {
+                            unique.push(p);
+                            seen.add(p.id);
+                        }
+                    }
+                    return unique;
+                });
                 setHasMore(fetchedPosts.length === POSTS_PER_PAGE);
             } catch {
                 setError("Không thể tải bài viết. Vui lòng thử lại.");

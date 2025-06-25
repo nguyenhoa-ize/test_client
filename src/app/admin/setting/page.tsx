@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ReactElement } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import { toast, ToastContainer } from 'react-toastify';
@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { FiSearch, FiEye, FiTrash2 } from 'react-icons/fi';
 import AdminGuard from '@/components/AdminGuard';
 import { FixedSizeList as List } from 'react-window';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 type ForbiddenWord = {
   id: string;
@@ -28,6 +29,8 @@ export default function SettingPage(): ReactElement {
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 20;
   const [searchInput, setSearchInput] = useState('');
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const mobileListRef = useRef<HTMLDivElement>(null);
 
   const truncateIfNeeded = (text: string): string => {
     if (text == null || typeof text !== 'string') {
@@ -61,10 +64,11 @@ export default function SettingPage(): ReactElement {
     return finalResult;
   };
 
-  const fetchWords = async (reset = false) => {
+  const fetchWords = async (reset = false, searchText?: string) => {
     setLoading(true);
     const params = new URLSearchParams();
-    if (search.trim()) params.set('search', search);
+    const searchValue = typeof searchText === 'string' ? searchText : search;
+    if (searchValue.trim()) params.set('search', searchValue);
     params.set('offset', reset ? '0' : offset.toString());
     params.set('limit', PAGE_SIZE.toString());
     const res = await fetch(`/api/forbidden_words?${params.toString()}`);
@@ -74,7 +78,11 @@ export default function SettingPage(): ReactElement {
       setWords(fetched);
       setOffset(PAGE_SIZE);
     } else {
-      setWords(prev => [...prev, ...fetched]);
+      setWords(prev => {
+        const ids = new Set(prev.map((w: ForbiddenWord) => w.id));
+        const merged = [...prev, ...fetched.filter((w: ForbiddenWord) => !ids.has(w.id))];
+        return merged;
+      });
       setOffset(prev => prev + PAGE_SIZE);
     }
     setHasMore(fetched.length === PAGE_SIZE);
@@ -86,11 +94,17 @@ export default function SettingPage(): ReactElement {
   }, []);
 
   useEffect(() => {
-    if (searchInput.trim() === '' && search !== '') {
-      setSearch('');
-      fetchWords(true);
-    }
-    // eslint-disable-next-line
+    // Debounce tìm kiếm realtime
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
+      setSearch(searchInput);
+      fetchWords(true, searchInput);
+    }, 300);
+    return () => {
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+      return undefined;
+    };
+  // eslint-disable-next-line
   }, [searchInput]);
 
   const handleDelete = async (id: string) => {
@@ -144,6 +158,19 @@ export default function SettingPage(): ReactElement {
     return dateB.getTime() - dateA.getTime();
   });
 
+  useEffect(() => {
+    const ref = mobileListRef.current;
+    if (!ref) return;
+    const handleScroll = () => {
+      if (loading || !hasMore) return;
+      if (ref.scrollHeight - ref.scrollTop - ref.clientHeight < 100) {
+        handleLoadMore();
+      }
+    };
+    ref.addEventListener('scroll', handleScroll);
+    return () => ref.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore]);
+
   return (
     <AdminGuard>
       <AdminLayout onOpenAuth={() => {}}>
@@ -156,7 +183,7 @@ export default function SettingPage(): ReactElement {
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
                   onClick={() => {
                     setSearch(searchInput);
-                    fetchWords(true);
+                    fetchWords(true, searchInput);
                   }}
                   style={{ zIndex: 2 }}
                   title="Tìm kiếm"
@@ -167,11 +194,11 @@ export default function SettingPage(): ReactElement {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       setSearch(searchInput);
-                      fetchWords(true);
+                      fetchWords(true, searchInput);
                     }
-                    if (e.key === 'Backspace' && e.target.value === '') {
+                    if (e.key === 'Backspace' && (e.target as HTMLInputElement).value === '') {
                       setSearch('');
-                      fetchWords(true);
+                      fetchWords(true, '');
                     }
                   }}
                   placeholder="Tìm kiếm từ cấm..."
@@ -187,7 +214,7 @@ export default function SettingPage(): ReactElement {
             </div>
 
             {/* Danh sách từ cấm trên di động */}
-            <div className="block sm:hidden relative">
+            <div className="block sm:hidden relative" ref={mobileListRef} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
               {words.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 bg-white rounded-xl border">
                   {search.trim()
@@ -230,19 +257,9 @@ export default function SettingPage(): ReactElement {
               >
                 + Thêm từ cấm
               </button>
-              {/* Nút xem thêm */}
-              {hasMore && !loading && words.length > 0 && (
-                <div className="flex justify-center py-2">
-                  <button
-                    className="px-4 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-sm font-semibold"
-                    onClick={handleLoadMore}
-                  >
-                    Xem thêm
-                  </button>
-                </div>
-              )}
-              {loading && words.length > 0 && (
-                <div className="text-center py-2 text-gray-500">Đang tải...</div>
+              {/* Infinite scroll: spinner sẽ hiện khi loading */}
+              {loading && hasMore && (
+                <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
               )}
             </div>
 
@@ -305,7 +322,7 @@ export default function SettingPage(): ReactElement {
                   </List>
                   {/* Khi đang load thêm ở cuối danh sách */}
                   {loading && words.length > 0 && (
-                    <div className="text-center py-2 text-gray-500">Đang tải...</div>
+                    <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                   )}
                   {/* Nếu có phân trang, có thể thêm {!hasMore ...} */}
                 </>

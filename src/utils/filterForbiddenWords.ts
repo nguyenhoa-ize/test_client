@@ -1,7 +1,9 @@
 export function filterForbiddenWords(text: string, forbiddenWords: string[]): string {
   let result = text;
   forbiddenWords.forEach(word => {
-    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    if (!word) return;
+    // Thay thế tất cả các chuỗi con khớp với từ cấm, không cần \b
+    const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     result = result.replace(regex, '***');
   });
   return result;
