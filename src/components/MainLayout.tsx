@@ -4,7 +4,7 @@ import React, { useState, ReactNode } from 'react';
 import Header from './Header';
 import { useUser } from '@/contexts/UserContext';
 import AuthModal from './AuthModal';
-import ChatBot from './ChatBot';
+import GeminiChatbot from './GeminiChatbot';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -47,7 +47,7 @@ export default function MainLayout({ children, className = '', theme = 'inspirin
       {/* Main content không cần marginTop nữa */}
       {children}
 
-      {<ChatBot />}
+      {<GeminiChatbot />}
     </div>
   );
 }
