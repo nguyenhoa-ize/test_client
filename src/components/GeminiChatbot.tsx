@@ -32,40 +32,6 @@ const GeminiChatbot = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Test API connection on component mount
-  useEffect(() => {
-    if (isOpen) {
-      testAPIConnection();
-    }
-  }, [isOpen]);
-
-  const testAPIConnection = async () => {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (!apiKey) {
-      setApiStatus("error");
-      return;
-    }
-
-    setApiStatus("loading");
-    try {
-      const response = await fetch("/api/gemini-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: "Hello" }),
-      });
-
-      if (response.ok) {
-        setApiStatus("ready");
-      } else {
-        setApiStatus("error");
-      }
-    } catch (error) {
-      setApiStatus("error");
-    }
-  };
-
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
@@ -84,7 +50,7 @@ const GeminiChatbot = () => {
         role: msg.from === "user" ? "user" : "assistant",
         parts: [{ text: msg.text }]
       }));
-      const response = await fetch("http://localhost:5000/api/ai/chat", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
