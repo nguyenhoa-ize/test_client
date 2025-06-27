@@ -175,44 +175,78 @@ const PostDetailPopup = ({
                             </p>
                         </div>
                     </div>
-                    {/* Nội dung & ảnh */}
-                    {post.images && post.images.length > 0 && (
-                        <div className="mb-6">
-                            <img
-                                ref={imgRef}
-                                src={post.images[selectedImg]}
-                                alt="post-large"
-                                className="max-h-[450px] w-full rounded-xl mb-3 object-contain cursor-pointer transition-transform hover:scale-105"
-                                onClick={() =>
-                                    post.images &&
-                                    window.open(
-                                        post.images[selectedImg],
-                                        "_blank"
-                                    )
-                                }
-                            />
-                            {post.images.length > 1 && (
-                                <div className="flex gap-3 mt-3 overflow-x-auto pb-2">
-                                    {post.images.map((img, idx) => (
-                                        <img
-                                            key={idx}
-                                            src={img}
-                                            alt={`thumb-${idx}`}
-                                            className={`w-20 h-20 object-cover rounded-lg border-2 transition-all ${
-                                                selectedImg === idx
-                                                    ? "border-blue-500"
-                                                    : "border-transparent hover:border-blue-300"
-                                            }`}
-                                            onClick={() => setSelectedImg(idx)}
-                                        />
-                                    ))}
+                    {/* Nội dung & ảnh của người chia sẻ (caption, ảnh) */}
+                    {(post.content || (post.images && post.images.length > 0)) && (
+                        <>
+                            {post.content && (
+                                <p
+                                    className="text-gray-800 text-base font-medium break-words mb-4"
+                                    onClick={
+                                        showFullContent
+                                            ? handleCollapseContent
+                                            : undefined
+                                    }
+                                    style={showFullContent ? { cursor: "pointer" } : {}}
+                                >
+                                    {post.content &&
+                                    post.content.length > 300 &&
+                                    !showFullContent ? (
+                                        <>
+                                            {post.content.slice(0, 300)}
+                                            <button
+                                                className="ml-1 text-blue-600 hover:text-blue-800 font-medium transition-colors bg-gradient-to-r from-blue-50 to-transparent rounded px-1"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowFullContent(true);
+                                                }}
+                                            >
+                                                ... Xem thêm
+                                            </button>
+                                        </>
+                                    ) : (
+                                        post.content
+                                    )}
+                                </p>
+                            )}
+                            {post.images && post.images.length > 0 && (
+                                <div className="mb-6">
+                                    <img
+                                        ref={imgRef}
+                                        src={post.images[selectedImg]}
+                                        alt="post-large"
+                                        className="max-h-[450px] w-full rounded-xl mb-3 object-contain cursor-pointer transition-transform hover:scale-105"
+                                        onClick={() =>
+                                            post.images &&
+                                            window.open(
+                                                post.images[selectedImg],
+                                                "_blank"
+                                            )
+                                        }
+                                    />
+                                    {post.images.length > 1 && (
+                                        <div className="flex gap-3 mt-3 overflow-x-auto pb-2">
+                                            {post.images.map((img, idx) => (
+                                                <img
+                                                    key={idx}
+                                                    src={img}
+                                                    alt={`thumb-${idx}`}
+                                                    className={`w-20 h-20 object-cover rounded-lg border-2 transition-all ${
+                                                        selectedImg === idx
+                                                            ? "border-blue-500"
+                                                            : "border-transparent hover:border-blue-300"
+                                                    }`}
+                                                    onClick={() => setSelectedImg(idx)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
-                        </div>
+                        </>
                     )}
                     {/* Shared post */}
                     {post.shared_post && (
-                        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-6 shadow-sm">
+                        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-6 shadow-sm max-h-96 overflow-y-auto">
                             <div className="flex items-center gap-3 mb-3">
                                 {post.shared_post.avatar_url ? (
                                     <Image
@@ -232,8 +266,7 @@ const PostDetailPopup = ({
                                 )}
                                 <div>
                                     <span className="font-semibold text-gray-800">
-                                        {post.shared_post.first_name}{" "}
-                                        {post.shared_post.last_name}
+                                        {post.shared_post.first_name} {post.shared_post.last_name}
                                     </span>
                                     <span className="text-gray-500 text-xs ml-2">
                                         {formatDate(
@@ -301,36 +334,6 @@ const PostDetailPopup = ({
                                 )}
                         </div>
                     )}
-                    <div className="mb-6" ref={contentRef}>
-                        <p
-                            className="text-gray-800 text-base font-medium break-words"
-                            onClick={
-                                showFullContent
-                                    ? handleCollapseContent
-                                    : undefined
-                            }
-                            style={showFullContent ? { cursor: "pointer" } : {}}
-                        >
-                            {post.content &&
-                            post.content.length > 300 &&
-                            !showFullContent ? (
-                                <>
-                                    {post.content.slice(0, 300)}
-                                    <button
-                                        className="ml-1 text-blue-600 hover:text-blue-800 font-medium transition-colors bg-gradient-to-r from-blue-50 to-transparent rounded px-1"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowFullContent(true);
-                                        }}
-                                    >
-                                        ... Xem thêm
-                                    </button>
-                                </>
-                            ) : (
-                                post.content
-                            )}
-                        </p>
-                    </div>
                     {/* Khu vực bình luận */}
                     <div className="border-t pt-6" ref={commentsRef}>
                         <CommentsSection

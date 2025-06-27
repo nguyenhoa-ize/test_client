@@ -11,7 +11,7 @@ interface Message {
   isError?: boolean;
 }
 
-const GeminiChatbot = () => {
+const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -282,4 +282,4 @@ const GeminiChatbot = () => {
   );
 };
 
-export default GeminiChatbot;
+export default ChatBot;

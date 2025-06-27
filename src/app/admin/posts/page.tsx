@@ -164,7 +164,7 @@ export default function PostManagementPage() {
       if (search.trim()) params.set('search', search);
       params.set('offset', reset ? '0' : offset.toString());
       params.set('limit', pageSize.toString());
-      const res = await fetch(`http://localhost:5000/api/admin/posts?${params.toString()}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts?${params.toString()}`);
       const result = await res.json();
       let sortedPosts = [...(result.items || [])];
       if (sortTime === 'newest') {
@@ -266,7 +266,7 @@ export default function PostManagementPage() {
   const handleApprove = async (id: string) => {
     const post = posts.find((p) => p.id === id);
     if (!post) return;
-    await fetch(`http://localhost:5000/api/admin/posts/${id}/approve`, { method: 'PUT' });
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts/${id}/approve`, { method: 'PUT' });
     toast.success(`Đã duyệt bài: "${post.content.slice(0, 50)}..."`);
     fetchPosts(true);
   };
@@ -294,7 +294,7 @@ export default function PostManagementPage() {
     if (deletePostId) {
       const post = posts.find((p) => p.id === deletePostId);
       if (!post) return;
-      await fetch(`http://localhost:5000/api/admin/posts/${deletePostId}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts/${deletePostId}`, { method: 'DELETE' });
       toast.success(`Đã xóa bài: "${post.content.slice(0, 50)}..."`);
       setDeletePostId(null);
       fetchPosts(true);
@@ -331,6 +331,10 @@ export default function PostManagementPage() {
     sortedPosts.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   }
 
+  useEffect(() => {
+    socket.emit('joinAdminRoom');
+  }, []);
+
   return (
     <AdminGuard>
       <AdminLayout onOpenAuth={() => {}}>
@@ -361,6 +365,18 @@ export default function PostManagementPage() {
             </div>
             {/* Card view for mobile, giống report */}
             <div className="block sm:hidden" ref={mobileListRef} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {/* Filter nằm trong vùng cuộn, giống report */}
+              <div className="flex flex-col gap-2 mb-2">
+                <div>
+                  <CustomDropdown value={type} onChange={v => setType(v as any)} options={typeOptions} widthClass="w-full" />
+                </div>
+                <div>
+                  <CustomDropdown value={status} onChange={v => setStatus(v as any)} options={statusOptions} widthClass="w-full" />
+                </div>
+                <div>
+                  <CustomDropdown value={sortTime || ''} onChange={v => setSortTime(v as any)} options={timeOptions} placeholder="Thời gian" widthClass="w-full" />
+                </div>
+              </div>
               {loading && sortedPosts.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 bg-white rounded-xl border">
                   <span className="inline-flex items-center justify-center">

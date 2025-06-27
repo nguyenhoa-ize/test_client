@@ -145,13 +145,13 @@ export default function UserManagementPage(): ReactElement {
         limit: pageSize.toString(),
         search: searchText.trim() || '',
       });
-      const res = await fetch(`http://localhost:5000/api/users?${params.toString()}`);
+      if (roleFilter !== 'all') params.set('role', roleFilter);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users?${params.toString()}`);
       const data = await res.json();
       console.log('API data:', data);
       let filtered = data.users || [];
       if (statusFilter === 'active') filtered = filtered.filter((u: User) => u.user_info?.is_active);
       else if (statusFilter === 'locked') filtered = filtered.filter((u: User) => !u.user_info?.is_active);
-      if (roleFilter !== 'all') filtered = filtered.filter((u: User) => u.role === roleFilter);
       if (reset) {
         setUsers(filtered);
         setOffset(pageSize);
@@ -204,15 +204,31 @@ export default function UserManagementPage(): ReactElement {
   };
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
+    // Lưu lại trạng thái cũ để rollback nếu cần
+    const oldUsers = [...users];
+    const action = currentStatus ? 'khóa' : 'mở khóa';
     try {
-      await fetch(`http://localhost:5000/api/users/${userId}/status`, {
+      // Gửi request lên backend trước
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !currentStatus }),
       });
-      toast.success(`Tài khoản đã được ${currentStatus ? 'khóa' : 'mở khóa'} thành công!`);
-      fetchUsers();
+      // Cập nhật UI sau khi thành công
+      setUsers(prev => prev.map(u =>
+        u.id === userId
+          ? {
+              ...u,
+              user_info: u.user_info
+                ? { ...u.user_info, is_active: !currentStatus }
+                : { is_active: !currentStatus, created_at: '' },
+            }
+          : u
+      ));
+      toast.success(`Tài khoản đã được ${action} thành công!`);
     } catch (err) {
+      // Rollback lại UI nếu lỗi (không đổi UI ở optimistic nữa)
+      // setUsers(oldUsers); // Không cần vì chưa đổi UI
       console.error('Lỗi khi cập nhật trạng thái:', err);
       toast.error('Đã xảy ra lỗi khi cập nhật trạng thái tài khoản.');
     }
@@ -228,23 +244,16 @@ export default function UserManagementPage(): ReactElement {
   };
 
   const updateUserRole = async (userId: string, newRole: string) => {
-    // Lưu lại role cũ để rollback nếu cần
-    const oldRole = users.find(u => u.id === userId)?.role ?? newRole;
-    // 1. Cập nhật UI ngay lập tức
+    // 1. Cập nhật UI ngay lập tức (optimistic update)
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    toast.success('Cập nhật phân quyền thành công!');
     try {
-      // 2. Gửi request lên backend
-      const res = await fetch(`http://localhost:5000/api/users/${userId}/role`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
       });
-      if (!res.ok) throw new Error('Lỗi cập nhật backend');
-      toast.success('Cập nhật phân quyền thành công!');
     } catch (err) {
-      // 3. Nếu lỗi, rollback lại UI hoặc thông báo lỗi
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: oldRole } : u));
-      toast.error('Đã xảy ra lỗi khi cập nhật phân quyền.');
     }
   };
 
@@ -296,7 +305,17 @@ export default function UserManagementPage(): ReactElement {
                 <CustomDropdown value={statusFilter} onChange={v => setStatusFilter(v as 'all' | 'active' | 'locked')} options={statusOptions} widthClass="w-full" />
                 <CustomDropdown value={roleFilter} onChange={v => setRoleFilter(v as 'all' | 'user' | 'admin')} options={roleFilterOptions} widthClass="w-full" />
               </div>
-              {users.length === 0 ? (
+              {loading && users.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 bg-white rounded-xl border">
+                  <span className="inline-flex items-center justify-center">
+                    <svg className="animate-spin h-5 w-5 text-blue-500 mr-2" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Đang tải dữ liệu...
+                  </span>
+                </div>
+              ) : users.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 bg-white rounded-xl border">
                   {emptyReason === 'search'
                     ? 'Không có kết quả nào phù hợp với từ khóa tìm kiếm.'
@@ -339,7 +358,7 @@ export default function UserManagementPage(): ReactElement {
                             onClick={() => toggleUserStatus(user.id, user.user_info?.is_active ?? false)}
                             className="text-red-500 hover:text-red-600"
                           >
-                            {user.user_info?.is_active ? <FiLock size={18} /> : <FiUnlock size={18} />}
+                            {user.user_info?.is_active ? <FiUnlock size={18} /> : <FiLock size={18} />}
                           </button>
                         </div>
                       </div>
@@ -349,8 +368,8 @@ export default function UserManagementPage(): ReactElement {
                       </div>
                     </div>
                   ))}
-                  {/* Infinite scroll: spinner sẽ hiện khi loading */}
-                  {loading && hasMore && (
+                  {/* Infinite scroll: spinner sẽ hiện khi loading và đã có dữ liệu */}
+                  {loading && hasMore && users.length > 0 && (
                     <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                   )}
                 </>
@@ -440,7 +459,7 @@ export default function UserManagementPage(): ReactElement {
                               onClick={() => toggleUserStatus(user.id, user.user_info?.is_active ?? false)}
                               className="text-red-500 hover:text-red-600"
                             >
-                              {user.user_info?.is_active ? <FiLock /> : <FiUnlock />}
+                              {user.user_info?.is_active ? <FiUnlock /> : <FiLock />}
                             </button>
                           </div>
                         </div>
@@ -518,18 +537,27 @@ export default function UserManagementPage(): ReactElement {
                           toast.error('Email không đúng định dạng!');
                           return;
                         }
-                        await fetch(`http://localhost:5000/api/users/${editingUser.id}`, {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            first_name: editingUser.first_name,
-                            last_name: editingUser.last_name,
-                            email: editingUser.email,
-                          }),
-                        });
-                        toast.success('Đã lưu thông tin chỉnh sửa thành công!');
+                        // Lưu lại users cũ để rollback nếu cần
+                        const oldUsers = [...users];
+                        // Optimistic update
+                        setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, first_name: editingUser.first_name, last_name: editingUser.last_name, email: editingUser.email } : u));
                         setEditingUser(null);
-                        fetchUsers();
+                        try {
+                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${editingUser.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              first_name: editingUser.first_name,
+                              last_name: editingUser.last_name,
+                              email: editingUser.email,
+                            }),
+                          });
+                          if (!res.ok) throw new Error('Lỗi cập nhật backend');
+                          toast.success('Đã lưu thông tin chỉnh sửa thành công!');
+                        } catch (err) {
+                          setUsers(oldUsers);
+                          toast.error('Đã xảy ra lỗi khi lưu thông tin người dùng.');
+                        }
                       }}
                     >
                       Lưu thay đổi

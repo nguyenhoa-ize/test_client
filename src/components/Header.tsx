@@ -47,7 +47,6 @@ const Header = memo<HeaderProps>(({
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading, logout, accessToken, setCurrentConversationId } = useUser();
-  console.log("Header rendered with user:", user);
 
   // State declarations
   const [search, setSearch] = useState("");
@@ -977,14 +976,19 @@ const Header = memo<HeaderProps>(({
             </div>
         )}
 
-        <div className={clsx("flex items-center justify-between w-full", { "invisible": showMobileSearch })}>
+        <div
+          className={clsx(
+            "w-full grid grid-cols-[auto_1fr_auto] items-center",
+            { "invisible": showMobileSearch }
+          )}
+        >
             {/* Logo */}
             <Link href="/" className="flex items-center h-12 w-28 sm:h-14 sm:w-32 md:h-16 md:w-40 lg:h-18 lg:w-44 xl:h-20 xl:w-48 hover:opacity-80 transition-opacity duration-200 cursor-pointer flex-shrink-0">
               <Image src="/logo.png" alt="Solace Logo" width={192} height={80} className="object-contain w-full h-full" priority />
             </Link>
             
-            {/* Search Bar - Changed from absolute to flex positioning */}
-            <div className="hidden md:flex flex-1 justify-center max-w-[700px] mx-4 relative">
+            {/* Search Bar - Centered with grid */}
+            <div className="hidden md:flex justify-center w-full max-w-[700px] mx-auto relative col-start-2 col-end-3">
               <div className="flex w-full rounded-full border border-black bg-white overflow-hidden" ref={inputWrapperRef}>
                 <FilteredInput
                   ref={inputRef}

@@ -93,8 +93,6 @@ export default function ReportsPage(): ReactElement {
   const [reports, setReports] = useState<Report[]>([]);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | 'processed' | 'pending'>('all');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLButtonElement>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [reportedPost, setReportedPost] = useState<ReportedPost | null>(null);
   const [sharedPost, setSharedPost] = useState<ReportedPost | null>(null);
@@ -107,8 +105,6 @@ export default function ReportsPage(): ReactElement {
   const [mailReport, setMailReport] = useState<Report | null>(null);
   const [deleteReportId, setDeleteReportId] = useState<string | null>(null);
   const [sortTime, setSortTime] = useState<'newest' | 'oldest' | null>(null);
-  const timeDropdownRef = useRef<HTMLButtonElement>(null);
-  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
   const listRef = useRef<List>(null);
   const [listHeight, setListHeight] = useState(420);
   const [listWidth, setListWidth] = useState<string | number>('100%');
@@ -122,6 +118,30 @@ export default function ReportsPage(): ReactElement {
   );
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const mobileListRef = useRef<HTMLDivElement>(null);
+
+  // Hàm lấy tên user (có cache)
+  const userNameCache: Record<string, string> = {};
+  async function fetchUserName(userId: string): Promise<string> {
+    if (!userId) return '';
+    if (userNameCache[userId]) return userNameCache[userId];
+    try {
+      const res = await fetch(`/api/users/${userId}`);
+      if (!res.ok) return '';
+      const user = await res.json();
+      const name = ((user.first_name || '') + ' ' + (user.last_name || '')).trim();
+      userNameCache[userId] = name;
+      return name;
+    } catch {
+      return '';
+    }
+  }
+
+  useEffect(() => {
+    socket.emit('joinAdminRoom');
+    return () => {
+      socket.emit('leave', 'admin_room');
+    };
+  }, []);
 
   const truncateIfNeeded = (text: string, width: number): string => {
     if (text == null || typeof text !== 'string') {
@@ -154,6 +174,30 @@ export default function ReportsPage(): ReactElement {
     return finalResult;
   };
 
+  // Chuẩn hóa báo cáo, luôn lấy tên nếu chưa có
+  async function normalizeReport(report: any) {
+    let reported_by = ((report.reporter_first_name || '') + ' ' + (report.reporter_last_name || '')).trim();
+    let reported_account = ((report.reported_first_name || '') + ' ' + (report.reported_last_name || '')).trim();
+
+    if (!reported_by && report.reporter_id) {
+      reported_by = await fetchUserName(report.reporter_id);
+    }
+    if (!reported_account && report.reported_user_id) {
+      reported_account = await fetchUserName(report.reported_user_id);
+    }
+
+    return {
+      report_id: String(report.report_id || report.id || `${Date.now()}-${Math.random()}`),
+      date_reported: String(report.date_reported || report.created_at || ''),
+      reported_by: reported_by || 'Không xác định',
+      reported_account: reported_account || 'Không xác định',
+      content: (report.reason ? report.reason : '') + (report.description ? `: ${report.description}` : '') || report.content || '',
+      status: report.status === 'pending' ? 'Chưa xử lý' : (report.status === 'processed' ? 'Đã xử lý' : report.status || ''),
+      reporter_id: String(report.reporter_id || ''),
+      reported_user_id: String(report.reported_user_id || ''),
+    };
+  }
+
   const fetchReports = async (reset = false) => {
     if (loading) return;
     setLoading(true);
@@ -166,16 +210,7 @@ export default function ReportsPage(): ReactElement {
       params.set('limit', pageSize.toString());
       const res = await fetch(`/api/reports?${params.toString()}`);
       const result = await res.json();
-      let fetched = (result.items || []).map((report: any) => ({
-        report_id: String(report.report_id || 'Không có mã'),
-        date_reported: String(report.date_reported || ''),
-        reported_by: String(report.reported_by || ''),
-        reported_account: String(report.reported_account || ''),
-        content: String(report.content || ''),
-        status: String(report.status || ''),
-        reporter_id: String(report.reporter_id || ''),
-        reported_user_id: String(report.reported_user_id || ''),
-      }));
+      let fetched = await Promise.all((result.items || []).map(normalizeReport));
       if (sortTime === 'newest') {
         fetched = [...fetched].sort((a, b) => new Date(b.date_reported).getTime() - new Date(a.date_reported).getTime());
       } else if (sortTime === 'oldest') {
@@ -265,10 +300,11 @@ export default function ReportsPage(): ReactElement {
   }, [loading, hasMore]);
 
   useEffect(() => {
-    const handleNewReport = (data: { report: Report }) => {
+    const handleNewReport = async (data: { report: any }) => {
+      const newReport = await normalizeReport(data.report);
       setReports((prev) => {
-        if (prev.some(r => r.report_id === data.report.report_id)) return prev;
-        return [data.report, ...prev.filter(r => r.report_id !== data.report.report_id)];
+        if (prev.some(r => r.report_id === newReport.report_id)) return prev;
+        return [newReport, ...prev];
       });
     };
     const handleReportDeleted = (data: { reportId: string }) => {
@@ -279,14 +315,6 @@ export default function ReportsPage(): ReactElement {
     return () => {
       socket.off('newReport', handleNewReport);
       socket.off('reportDeleted', handleReportDeleted);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Join admin_room để nhận realtime update
-    socket.emit('join', 'admin_room');
-    return () => {
-      socket.emit('leave', 'admin_room');
     };
   }, []);
 
@@ -305,7 +333,7 @@ export default function ReportsPage(): ReactElement {
       await fetch(`/api/reports/${deleteReportId}`, { method: 'DELETE' });
       toast.success('Đã xóa báo cáo!');
       setDeleteReportId(null);
-      fetchReports();
+      setReports(prev => prev.filter(r => r.report_id !== deleteReportId));
     }
   };
 

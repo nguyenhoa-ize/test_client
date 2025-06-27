@@ -134,7 +134,7 @@ export default function SettingPage(): ReactElement {
       toast.success('Đã thêm từ cấm mới!');
       setNewWord('');
       setShowAddModal(false);
-      setWords((prev) => [{ id: result.id || Math.random().toString(), word: newWord.trim(), added_at: new Date().toISOString() }, ...prev]);
+      fetchWords(true);
     } else {
       toast.error('Có lỗi xảy ra, vui lòng thử lại.');
     }
@@ -215,7 +215,17 @@ export default function SettingPage(): ReactElement {
 
             {/* Danh sách từ cấm trên di động */}
             <div className="block sm:hidden relative" ref={mobileListRef} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-              {words.length === 0 ? (
+              {loading && words.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 bg-white rounded-xl border">
+                  <span className="inline-flex items-center justify-center">
+                    <svg className="animate-spin h-5 w-5 text-blue-500 mr-2" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Đang tải dữ liệu...
+                  </span>
+                </div>
+              ) : words.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 bg-white rounded-xl border">
                   {search.trim()
                     ? 'Không có kết quả nào phù hợp với từ khóa tìm kiếm.'
@@ -257,14 +267,14 @@ export default function SettingPage(): ReactElement {
               >
                 + Thêm từ cấm
               </button>
-              {/* Infinite scroll: spinner sẽ hiện khi loading */}
-              {loading && hasMore && (
+              {/* Infinite scroll: spinner sẽ hiện khi loading và đã có dữ liệu */}
+              {loading && hasMore && words.length > 0 && (
                 <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
               )}
             </div>
 
             {/* LazyColumn cho desktop */}
-            <div className="hidden sm:block border border-[#DBE0E5] rounded-xl bg-white max-h-[480px] overflow-y-auto">
+            <div className="hidden sm:block border border-[#DBE0E5] rounded-xl bg-white max-h-[600px] overflow-y-auto">
               {/* Header */}
               <div className="flex w-full text-sm font-semibold bg-white border-b border-[#DBE0E5] sticky top-0 z-10 items-center">
                 <div className="p-3 flex-1 text-gray-800 flex justify-center items-center text-center">Mã</div>
@@ -290,11 +300,17 @@ export default function SettingPage(): ReactElement {
               ) : (
                 <>
                   <List
-                    height={320}
+                    height={420}
                     itemCount={words.length}
                     itemSize={56}
                     width={"100%"}
                     itemKey={index => words[index].id}
+                    onScroll={({ scrollOffset, scrollDirection }) => {
+                      const bottomThreshold = words.length * 56 - 500;
+                      if (scrollOffset > bottomThreshold && scrollDirection === 'forward') {
+                        handleLoadMore();
+                      }
+                    }}
                   >
                     {({ index, style }) => {
                       const word = words[index];
@@ -324,7 +340,9 @@ export default function SettingPage(): ReactElement {
                   {loading && words.length > 0 && (
                     <div className="flex justify-center py-2"><LoadingSpinner size={24} color="#ea580c" /></div>
                   )}
-                  {/* Nếu có phân trang, có thể thêm {!hasMore ...} */}
+                  {!hasMore && words.length > 0 && (
+                    <div className="text-center py-2 text-gray-400 text-sm">Đã hiển thị hết danh sách</div>
+                  )}
                 </>
               )}
             </div>
