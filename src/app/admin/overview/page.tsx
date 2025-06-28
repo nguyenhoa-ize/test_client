@@ -100,7 +100,9 @@ export default function AdminPage(): ReactElement {
   return (
     <AdminGuard>
       <AdminLayout onOpenAuth={handleOpenAuth}>
-        <main className="flex-1 bg-white">
+        <main
+          className="h-[calc(100vh-64px)] overflow-y-auto"
+        >
           <div className="p-4 sm:p-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">Tổng quan hệ thống</h1>
 

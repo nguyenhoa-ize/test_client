@@ -30,8 +30,8 @@ export default function LeftSidebarAdmin({ className = '', ...props }: HTMLAttri
       {/* Sidebar */}
       <aside
         className={`w-64 bg-white border-r border-gray-200 p-4 flex flex-col justify-between fixed top-0 left-0 z-40 transition-transform duration-300
-        ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:block ${className}`}
-        style={{ maxWidth: 256, height: '100vh' }}
+        ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:block ${className} lg:fixed lg:top-0 lg:left-0 lg:h-screen lg:z-30 lg:overflow-y-auto`}
+        style={{ maxWidth: 256 }}
         {...props}
       >
         <div className="space-y-6">

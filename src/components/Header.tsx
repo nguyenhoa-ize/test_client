@@ -1161,7 +1161,7 @@ const Header = memo<HeaderProps>(({
                   >
                     <span className="material-symbols-outlined text-base sm:text-lg md:text-[20px]" style={{ color: '#2563eb' }}>mail</span>
                     {unreadCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-blue-500 text-white text-[10px] sm:text-xs font-bold rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex items-center justify-center animate-pulse transition-all duration-300 transform scale-100 hover:scale-110 z-10">
+                      <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-blue-500 text-white text-[10px] sm:text-xs font-bold rounded-full min-w-[22px] h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex items-center justify-center px-1 animate-pulse transition-all duration-300 transform scale-100 hover:scale-110 z-10">
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
@@ -1244,7 +1244,7 @@ const Header = memo<HeaderProps>(({
                               {/* Badge unread count */}
                               {conv.unread_count > 0 && (
                                 <div className="absolute top-1 sm:top-2 right-1 sm:right-2">
-                                  <span className="bg-blue-500 text-white text-[10px] sm:text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
+                                  <span className="bg-blue-500 text-white text-[10px] sm:text-xs font-bold rounded-full min-w-[22px] h-4 sm:w-5 sm:h-5 flex items-center justify-center px-1">
                                     {conv.unread_count > 9 ? '9+' : conv.unread_count}
                                   </span>
                                 </div>
@@ -1291,7 +1291,7 @@ const Header = memo<HeaderProps>(({
                   >
                     <span className="material-symbols-outlined text-base sm:text-lg md:text-[20px]" style={{ color: '#ea580c' }}>notifications</span>
                     {unreadNotifications > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-orange-500 text-white text-[10px] sm:text-xs font-bold rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex items-center justify-center animate-pulse transition-all duration-300 transform scale-100 hover:scale-110 z-10">
+                      <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-orange-500 text-white text-[10px] sm:text-xs font-bold rounded-full min-w-[22px] h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 flex items-center justify-center px-1 animate-pulse transition-all duration-300 transform scale-100 hover:scale-110 z-10">
                         {unreadNotifications > 99 ? '99+' : unreadNotifications}
                       </span>
                     )}

@@ -33,6 +33,12 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [isOpen]);
+
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
@@ -161,8 +167,8 @@ const ChatBot = () => {
       {/* Chat Window */}
       {isOpen && (
         <div
-          className="fixed bottom-0 left-0 right-0 sm:left-auto sm:right-6 sm:bottom-6 w-full sm:w-[420px] max-w-full sm:max-w-[520px] h-[90dvh] sm:h-[650px] bg-white/95 backdrop-blur-lg border border-white/40 shadow-2xl z-50 flex flex-col rounded-t-3xl sm:rounded-lg animate-slide-up"
-          style={{ maxHeight: '98dvh' }}
+          className="fixed bottom-0 left-0 right-0 sm:left-auto sm:right-6 sm:bottom-6 w-full sm:w-[420px] max-w-full sm:max-w-[500px] h-[80dvh] sm:h-[600px] bg-white/95 backdrop-blur-lg border border-white/40 shadow-2xl z-50 flex flex-col rounded-t-3xl sm:rounded-lg animate-slide-up"
+          style={{ maxHeight: '95dvh' }}
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
@@ -189,8 +195,8 @@ const ChatBot = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-5 space-y-2 sm:space-y-4 bg-gradient-to-br from-white/95 via-indigo-50 to-pink-50 scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-white/30"
-            style={{ fontSize: '1.08rem', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex-1 overflow-y-auto p-2 sm:p-5 space-y-3 sm:space-y-5 bg-gradient-to-br from-white/95 via-indigo-50 to-pink-50 scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-white/30 text-[15px] sm:text-[16px] leading-relaxed"
+            style={{ WebkitOverflowScrolling: 'touch' }}>
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -245,9 +251,9 @@ const ChatBot = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={apiStatus === "error" ? "API lỗi - thử lại sau..." : "Nhập tin nhắn..."}
-                className="flex-1 px-4 py-3 sm:px-5 sm:py-3 border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent text-base sm:text-base bg-white/95"
+                className="flex-1 px-4 py-3 sm:px-5 sm:py-3 border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent text-[15px] sm:text-[16px] bg-white/95"
                 disabled={loading || apiStatus === "error"}
-                autoFocus={isOpen && window.innerWidth > 640}
+                autoFocus={isOpen && typeof window !== 'undefined' && window.innerWidth > 640}
                 style={{ boxShadow: '0 2px 8px 0 rgba(236,72,153,0.07)' }}
                 inputMode="text"
                 autoComplete="on"

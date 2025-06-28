@@ -12,7 +12,7 @@ export default function AdminLayout({
   onOpenAuth: (tab: 'login' | 'signup') => void;
 }): ReactElement {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Desktop layout */}
       <div className="hidden lg:block">
         <div className="flex min-h-screen">

@@ -123,14 +123,16 @@ const AboutPage = () => {
 
   return (
     <div ref={pageRef} className="min-h-screen flex flex-col w-full bg-slate-50 overflow-hidden relative font-sans text-gray-800">
-      {/* Background animated circles - more subtle */}
-      {/* <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob bg-circle-1" aria-hidden="true" />
-      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-pink-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000 bg-circle-2" aria-hidden="true" /> */}
-
-      <Header />
-      <div className="flex flex-1 w-full mt-4 items-start">
-        <LeftSidebar />
-        <main className="flex-1 flex flex-col items-center px-4 md:px-12 pb-16">
+      {/* Fixed Header */}
+      <div className="fixed top-0 left-0 w-full z-30 bg-white/80 backdrop-blur shadow-md">
+        <Header />
+      </div>
+      <div className="flex flex-1 w-full pt-20 mt-0 items-start">
+        {/* Fixed LeftSidebar */}
+        <div className="fixed top-20 left-0 h-[calc(100vh-5rem)] w-24 z-20">
+          <LeftSidebar />
+        </div>
+        <main className="flex-1 flex flex-col items-center px-4 md:px-12 pb-16 pl-24">
           <div className="w-full max-w-3xl relative z-10">
             {/* Navigation back to homepage */}
             <nav className="mb-10">
